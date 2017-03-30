@@ -9,6 +9,11 @@ Created on Wed Mar 29 12:08:29 2017
 from scikits.audiolab import Sndfile, play
 import numpy as np
 
+
+def gammatone_filter(n, b, f, phi, t):
+    return t**(n-1) * np.cos(2*np.pi*f*t + phi) * np.exp(-2*np.pi*b*t)
+
+
 filename = 'data/fsew/fsew0_001.wav'
 f = Sndfile(filename, 'r')
 data = f.read_frames(f.nframes)
