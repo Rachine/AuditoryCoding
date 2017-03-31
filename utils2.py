@@ -32,7 +32,8 @@ def gammatone_matrix(b, fc, resolution, step, fs=16000, n=4, threshold=5):
             D.append(gammatone_function(resolution, fc, center, b=b, n=n))
     D = np.asarray(D)
     D /= np.sqrt(np.sum(D ** 2, axis=1))[:, np.newaxis]
-    return D
+    freq_c = np.array(fc*np.ones(D.shape[0]))
+    return D,freq_c,centers
 
 def erb(f):
     return 24.7+0.108*f

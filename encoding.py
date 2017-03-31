@@ -2,7 +2,7 @@ import numpy as np
 from utils2 import *
 import pdb
 
-def matching_pursuit(signal, dict_kernels, threshold=0.01, max_iter=1000):
+def matching_pursuit(signal, dict_kernels, threshold=0.01, max_iter=2000):
     """
     Matching pursuit algorithm for encoding
     :param signal: input signal
@@ -21,7 +21,6 @@ def matching_pursuit(signal, dict_kernels, threshold=0.01, max_iter=1000):
         res = res - coeff[max_kernel] * dict_kernels[max_kernel,: ]
         if np.linalg.norm(res) < threshold:
             print 'exit_threshold'
-            plt.plot(signal)
             return coeff
     print 'exit_iter'
     return coeff
@@ -31,26 +30,30 @@ from scikits.talkbox import segment_axis
 resolution = 160
 step = 6
 b = 1.019
-n_channels = 64
+n_channels = 128
 overlap = 80
 
 # Compute a multiscale dictionary
 
-D_multi = np.r_[tuple(gammatone_matrix(b, fc, resolution, step) for
+D_multi = np.r_[tuple(gammatone_matrix(b, fc, resolution, step)[0] for
                       fc in erb_space(150, 8000, n_channels))]
 
+freq_c = np.array([gammatone_matrix(b, fc, resolution, step)[1] for
+                      fc in erb_space(150, 8000, n_channels)]).flatten()
+    
+centers = np.array([gammatone_matrix(b, fc, resolution, step)[2] for
+                      fc in erb_space(150, 8000, n_channels)]).flatten()
 
 # Load test signal
 filename = 'data/fsew/fsew0_001.wav'
 f = Sndfile(filename, 'r')
 nf = f.nframes
 fs = f.samplerate
-y = f.read_frames(nf)
+y = f.read_frames(5000)
+y = f.read_frames(20000)
 Y = segment_axis(y, resolution, overlap=overlap, end='pad')
 Y = np.hanning(resolution) * Y
 
-#l = matching_pursuit(Y[5,:],D_multi)
-#sum(l != 0)
 X = np.zeros((Y.shape[0],D_multi.shape[0]))
 for idx in range(Y.shape[0]):
     X[idx,:] = matching_pursuit(Y[idx,:],D_multi)
@@ -63,10 +66,10 @@ squared_error = np.sum((y - out[0:len(y)]) ** 2)
 play(y,fs=16000)
 play(out,fs=16000)
 
-arr = np.array(range(nf))/float(fs)
+arr = np.array(range(20000))/float(fs)
 plt.figure(1)
 plt.subplot(311)
-plt.plot(arr,y, 'bo')
+plt.plot(arr,y, 'b--')
 
 plt.subplot(312)
 plt.plot(arr,out[0:len(y)], 'r--')
@@ -76,3 +79,29 @@ plt.plot(arr,(y - out[0:len(y)]) ** 2, 'g--')
 
 
 plt.show()
+
+plt.figure(2)
+spikes_pos = np.array(np.nonzero(X))
+temporal_position = centers[spikes_pos[1][:]]
+centre_freq = freq_c[spikes_pos[1][:]]
+plt.scatter(temporal_position, centre_freq, marker='+',s=0.6)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
