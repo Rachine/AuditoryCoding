@@ -2,7 +2,7 @@ import numpy as np
 from utils2 import *
 import pdb
 
-def matching_pursuit(signal, dict_kernels, threshold=0.01, max_iter=2000):
+def matching_pursuit(signal, dict_kernels, threshold=0.1, max_iter=2000):
     """
     Matching pursuit algorithm for encoding
     :param signal: input signal
@@ -28,7 +28,7 @@ def matching_pursuit(signal, dict_kernels, threshold=0.01, max_iter=2000):
 #if __name__ == '__main__':
 from scikits.talkbox import segment_axis
 resolution = 160
-step = 6
+step = 8
 b = 1.019
 n_channels = 128
 overlap = 80
@@ -41,16 +41,17 @@ D_multi = np.r_[tuple(gammatone_matrix(b, fc, resolution, step)[0] for
 freq_c = np.array([gammatone_matrix(b, fc, resolution, step)[1] for
                       fc in erb_space(150, 8000, n_channels)]).flatten()
     
-centers = np.array([gammatone_matrix(b, fc, resolution, step)[2] for
-                      fc in erb_space(150, 8000, n_channels)]).flatten()
+centers = np.array([gammatone_matrix(b, fc, resolution, step)[2] + i*resolution  for
+                      i,fc in enumerate(erb_space(150, 8000, n_channels))]).flatten()
 
 # Load test signal
 filename = 'data/fsew/fsew0_001.wav'
 f = Sndfile(filename, 'r')
 nf = f.nframes
 fs = f.samplerate
+length_sound = 20000
 y = f.read_frames(5000)
-y = f.read_frames(20000)
+y = f.read_frames(length_sound)
 Y = segment_axis(y, resolution, overlap=overlap, end='pad')
 Y = np.hanning(resolution) * Y
 
@@ -66,23 +67,27 @@ squared_error = np.sum((y - out[0:len(y)]) ** 2)
 play(y,fs=16000)
 play(out,fs=16000)
 
-arr = np.array(range(20000))/float(fs)
+arr = np.array(range(length_sound))/float(fs)
 plt.figure(1)
 plt.subplot(311)
-plt.plot(arr,y, 'b--')
-
+plt.plot(arr,y, 'b--', label = "Input Signal")
+plt.legend()
 plt.subplot(312)
-plt.plot(arr,out[0:len(y)], 'r--')
+plt.plot(arr,out[0:len(y)], 'r--', label = "Recontruction")
+plt.legend()
 
 plt.subplot(313)
-plt.plot(arr,(y - out[0:len(y)]) ** 2, 'g--')
+plt.plot(arr,(y - out[0:len(y)])**2, 'g--', label = "Residual")
+plt.legend()
+
+plt.xlabel("Time in s")
 
 
 plt.show()
 
 plt.figure(2)
 spikes_pos = np.array(np.nonzero(X))
-temporal_position = centers[spikes_pos[1][:]]
+temporal_position = centers[spikes_pos[0][:]]
 centre_freq = freq_c[spikes_pos[1][:]]
 plt.scatter(temporal_position, centre_freq, marker='+',s=0.6)
 
